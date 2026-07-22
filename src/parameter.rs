@@ -44,14 +44,14 @@ Code example
     };
 
 
-   let mut radar = mw_radar::MicrowaveRadar::new(_tx1_mw_radar, _rx1_mw_radar, delay_micro_seconds_fn);
+   let mut radar = hmmd_mmwave_sensor::MicrowaveRadar::new(_tx1_hmmd_mmwave_sensor, _rx1_hmmd_mmwave_sensor, delay_micro_seconds_fn);
 
-   let mut parser_params = mw_radar::parameter::ReadParam::new_parser();
+   let mut parser_params = hmmd_mmwave_sensor::parameter::ReadParam::new_parser();
 
-   let radar_range_gate_val: Option<u32> = radar.get_param_value( mw_radar::data::ParameterID::Range ,&mut parser_params);
-   let radar_delay_gate_val:Option<u32> = radar.get_param_value(mw_radar::data::ParameterID::Delay,&mut parser_params);
-   let radar_tt_00_val:Option<u32> = radar.get_param_value(mw_radar::data::ParameterID::TriggerThreshold00,&mut parser_params);
-   let radar_ht_00_val:Option<u32> = radar.get_param_value(mw_radar::data::ParameterID::HoldThreshold00,&mut parser_params);
+   let radar_range_gate_val: Option<u32> = radar.get_param_value( hmmd_mmwave_sensor::data::ParameterID::Range ,&mut parser_params);
+   let radar_delay_gate_val:Option<u32> = radar.get_param_value(hmmd_mmwave_sensor::data::ParameterID::Delay,&mut parser_params);
+   let radar_tt_00_val:Option<u32> = radar.get_param_value(hmmd_mmwave_sensor::data::ParameterID::TriggerThreshold00,&mut parser_params);
+   let radar_ht_00_val:Option<u32> = radar.get_param_value(hmmd_mmwave_sensor::data::ParameterID::HoldThreshold00,&mut parser_params);
 
 */
 //send FD FC FB FA 04 00 08 00 01 00 04 03 02 01

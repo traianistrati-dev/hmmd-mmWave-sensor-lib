@@ -15,7 +15,7 @@ description = "HMMD mmWave Sensor USART protocol"
 # harness cannot be built for it — leaving these on gives
 # "can't find crate for `test`". Same reason the firmware's [[bin]]
 # sets them. Test this crate on the host instead:
-#   cargo test -p mw_radar --target <host-triple>
+#   cargo test -p hmmd_mmwave_sensor --target <host-triple>
 test    = false
 bench   = false
 doctest = false

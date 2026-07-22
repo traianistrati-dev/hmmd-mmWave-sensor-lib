@@ -55,7 +55,7 @@ impl ParameterID{
 
 }
 
-//#[repr(u16)]
+#[repr(u16)]
 pub enum CommandID{
     EnableConfig = 0xFF00,
     EnableConfigAck = 0xFF01,

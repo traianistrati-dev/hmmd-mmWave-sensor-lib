@@ -33,12 +33,12 @@ impl<F> UsartRx for F where F: FnMut() -> Option<u8>,
 
 
 pub trait DelayMs {
-    fn delay_ms(&self, ms: u32);
+    fn delay_micro_seconds(&self, ms: u32);
 }
 
 impl<F> DelayMs for F where F: Fn(u32),
 {
-    fn delay_ms(&self, ms: u32) {
+    fn delay_micro_seconds(&self, ms: u32) {
         self(ms);
     }
 }
@@ -114,7 +114,7 @@ impl <DELAY:DelayMs, TX:UsartTx,RX:UsartRx> MicrowaveRadar<DELAY,TX,RX>{
 
     pub fn delay_micro_seconds(&self, ms:u32) {
 
-        self.delay.delay_ms(ms);
+        self.delay.delay_micro_seconds(ms);
     }
 
 
