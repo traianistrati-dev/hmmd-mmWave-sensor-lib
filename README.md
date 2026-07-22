@@ -1,4 +1,4 @@
-# hmmd_mmwave_sensor
+# RUST Driver for HMMD mmWave Sensor
 
 A `no_std` Rust driver for the **HMMD mmWave presence sensor**, implementing its
 USART serial protocol. HAL-agnostic: you provide the UART read/write and a delay
