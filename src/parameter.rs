@@ -1,8 +1,9 @@
+//! Parameter read/write commands and the parser for read-parameter replies.
 
-use super::{Parser, ParserResult};
+use super::{Parser, ParserResult,SerialCmd, ParameterID, CommandID, SEND_HEADER,SEND_TAIL};
 
-const CMD_HEADER: [u8; 4] = SEND_HEADER;//[0xFD, 0xFC, 0xFB, 0xFA];
-const CMD_TAIL:   [u8; 4] = SEND_TAIL;//[0x04, 0x03, 0x02, 0x01];
+const CMD_HEADER: [u8; 4] = SEND_HEADER;
+const CMD_TAIL:   [u8; 4] = SEND_TAIL;
 
 const PAYLOAD_LEN: usize = 4;
 const EXPECTED_CMD_ID: u16  = super::CommandID::ReadParamAck.as_u16();
@@ -11,6 +12,9 @@ const RESERVED_LEN: usize = 2;
 type ParserType<'a> = Parser<'a, PAYLOAD_LEN, RESERVED_LEN,EXPECTED_CMD_ID>;
 
 
+/// Marker type for parsing a "read parameter" reply.
+///
+/// Its [`ParserResult`] impl decodes the 4-byte payload into a `u32` value.
 pub struct ReadParam;
 
 
@@ -25,35 +29,34 @@ impl <'a>ParserResult<'a, PAYLOAD_LEN, RESERVED_LEN,EXPECTED_CMD_ID, u32> for Re
     }
 }
 
-/*
-ENTER CONFIG MOD
-FD FC FB FA 04 00 FF 00 02 00 04 03 02 01
-
-//tx send get param 01 00 value 	         rx 02 00 00 00
-FD FC FB FA 04 00 08 00 01 00 04 03 02 01 -> FD FC FB FA 08 00 08 01 00 00 02 00 00 00 04 03 02 01 
-*/
-
-use super::{SerialCmd, ParameterID, CommandID, SEND_HEADER,SEND_TAIL};
-
-///Reading parameter value requires this parser instance
-/*
-Code example 
-
-	let delay_micro_seconds_fn = |ms:u32|{
-        cortex_m::asm::delay(ms.saturating_mul(&clocks.sysclk().to_Hz() / 1_000_000)); //some example
-    };
 
 
-   let mut radar = hmmd_mmwave_sensor::MicrowaveRadar::new(_tx1_hmmd_mmwave_sensor, _rx1_hmmd_mmwave_sensor, delay_micro_seconds_fn);
-
-   let mut parser_params = hmmd_mmwave_sensor::parameter::ReadParam::new_parser();
-
-   let radar_range_gate_val: Option<u32> = radar.get_param_value( hmmd_mmwave_sensor::data::ParameterID::Range ,&mut parser_params);
-   let radar_delay_gate_val:Option<u32> = radar.get_param_value(hmmd_mmwave_sensor::data::ParameterID::Delay,&mut parser_params);
-   let radar_tt_00_val:Option<u32> = radar.get_param_value(hmmd_mmwave_sensor::data::ParameterID::TriggerThreshold00,&mut parser_params);
-   let radar_ht_00_val:Option<u32> = radar.get_param_value(hmmd_mmwave_sensor::data::ParameterID::HoldThreshold00,&mut parser_params);
-
-*/
+/// Frame builder for reading a parameter value.
+///
+/// Reading a parameter requires a [`ReadParam`] parser instance to decode the reply.
+///
+/// # Example
+///
+/// ```ignore
+/// let delay_micro_seconds_fn = |ms: u32| {
+///     cortex_m::asm::delay(ms.saturating_mul(&clocks.sysclk().to_Hz() / 1_000_000));
+/// };
+///
+/// let mut radar = hmmd_mmwave_sensor::MicrowaveRadar::new(
+///     _tx1_mw_radar, _rx1_mw_radar, delay_micro_seconds_fn,
+/// );
+///
+/// let mut parser_params = hmmd_mmwave_sensor::parameter::ReadParam::new_parser();
+///
+/// let range: Option<u32> = radar.get_param_value(
+///     hmmd_mmwave_sensor::data::ParameterID::Range, &mut parser_params);
+/// let delay: Option<u32> = radar.get_param_value(
+///     hmmd_mmwave_sensor::data::ParameterID::Delay, &mut parser_params);
+/// let tt_00: Option<u32> = radar.get_param_value(
+///     hmmd_mmwave_sensor::data::ParameterID::TriggerThreshold00, &mut parser_params);
+/// let ht_00: Option<u32> = radar.get_param_value(
+///     hmmd_mmwave_sensor::data::ParameterID::HoldThreshold00, &mut parser_params);
+/// ```
 //send FD FC FB FA 04 00 08 00 01 00 04 03 02 01
 //result ACK FD FC FB FA 08 00 08 01 00 00  0F 00 00 00  04 03 02 01
 impl SerialCmd<14,0>{
@@ -79,7 +82,8 @@ impl SerialCmd<14,0>{
     }
 }
 
-///
+
+/// Frame builder for writing a parameter value.
 //send FD FC FB FA 08 00 07 00 01 00 02 00 00 00 04 03 02 01
 //result ACK FD FC FB FA_ 04 00 _07 01_ 00 00 04 03 02 01
 impl SerialCmd<18,4>{

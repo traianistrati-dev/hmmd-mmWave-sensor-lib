@@ -1,3 +1,7 @@
+//! Incremental, `no_std` byte-by-byte parser for HMMD protocol frames.
+ 
+/// Internal state of the [`Parser`] state machine, tracking progress through a
+/// frame: header, length, command id, reserved bytes, payload, tail.
 enum State {
     Header(usize),
     Length(usize, u16),
@@ -7,6 +11,12 @@ enum State {
     Tail(usize),
 }
 
+/// Binds a frame type to the parser that produces it and to its decoded output.
+///
+/// The const parameters describe the frame layout: `PAYLOAD_LEN` payload bytes,
+/// `RESERVED_LEN` reserved bytes,
+/// `EXPECTED_CMD_ID` the command id to match
+/// `RESULT` is the decoded type.
 pub trait ParserResult<'a,
 const PAYLOAD_LEN: usize,
 const RESERVED_LEN: usize,
@@ -17,6 +27,11 @@ RESULT,
     fn decode(payload: &[u8]) -> RESULT;
 }
 
+/// Incremental parser for HMMD frames, driven one byte at a time.
+///
+/// Feed received bytes with `(Parser::feed(byte)`; it returns `true` once a
+/// complete, valid frame has been assembled, at which point `Parser::payload`
+/// holds the useful bytes.
 pub struct Parser<'a,
 const PAYLOAD_LEN: usize,
 const RESERVED_LEN: usize,
@@ -85,6 +100,11 @@ const EXPECTED_CMD_ID: u16,
         }
     }
 
+	/// Consumes one received byte, advancing the state machine.
+    ///
+    /// Returns `true` exactly when a complete, valid frame has just been
+    /// finalized (the `Parser::payload` is then available);
+    /// otherwise returns `false`.
     pub fn feed(&mut self, b: u8) -> bool {
         match self.state {
             State::Header(n) => {
@@ -196,7 +216,7 @@ const EXPECTED_CMD_ID: u16,
     }
 }
 
-
+/// Decodes a raw threshold value back into dB (`10 * log10(value)`).
 pub fn decode_threschold_value(value: u32) -> f32 {
     if value == 0 {
         return 0.0;

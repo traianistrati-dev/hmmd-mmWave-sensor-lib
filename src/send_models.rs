@@ -1,5 +1,14 @@
+//! Builders for outgoing command frames ([`SerialCmd`]) and threshold encoding.
+
 use super::{CommandID, SEND_HEADER, SEND_TAIL};
 
+
+/// A ready-to-send serial command frame together with its expected ACK.
+///
+/// The const generics describe the frame's byte layout: `S` is the length of
+/// the [`send`](SerialCmd::send) frame, and `R` is the length of the ACK
+/// [`result_payload_ack`](SerialCmd::result_payload_ack) compared against the
+/// sensor's response (`0` when the command returns no ACK payload).
 pub struct SerialCmd<const S:usize,const R:usize>{
 
     pub send: [u8;S],
@@ -8,10 +17,15 @@ pub struct SerialCmd<const S:usize,const R:usize>{
 
 }
 
-///Used for initiating configuration setup, before setting parametrs values 
-//sent FD FC FB FA 04 00 FF 00 02 00 04 03 02 01
-//result ACK FD FC FB FA 08 00 FF 01 00 00 02 00 20 00 04 03 02 01
+
+/// Frame builder for entering configuration mode.
 impl SerialCmd<14,8>{
+
+    /// Builds the "enable config" command: enters configuration mode.
+    ///
+    /// Must be sent before writing any parameter values.
+    /// Sent:   `FD FC FB FA 04 00 FF 00 02 00 04 03 02 01`.
+    /// ACK:    `FD FC FB FA 08 00 FF 01 00 00 02 00 20 00 04 03 02 01`.
     pub fn begin_config( ) -> Self{
 
         let cmd_id_2b = CommandID::EnableConfig.get_bytes();
@@ -39,10 +53,13 @@ impl SerialCmd<14,8>{
 }
 
 
-///Used to save configuration data setup to sensor, at the end of finishing setting parametrs values 
-//send FD FC FB FA 02 00 FE 00 04 03 02 01
-//receieve ACK FD FC FB FA 04 00 FE 01 00 00 04 03 02 01
+/// Frame builder for saving the configuration.
 impl SerialCmd<12,4>{
+    /// Builds the "end/save config" command: persists the configuration to the
+    /// sensor's flash. Sent after all parameter values have been written.
+    ///
+    /// Sent:   `FD FC FB FA 02 00 FE 00 04 03 02 01`.
+    /// ACK:    `FD FC FB FA 04 00 FE 01 00 00 04 03 02 01`.
     pub fn end_save_config( ) -> Self{
 
         let cmd_id_2b = CommandID::EndSaveConfig.get_bytes();
@@ -71,7 +88,9 @@ impl SerialCmd<12,4>{
 
 
 
-
+/// Encodes a threshold value (in dB) into 4 little-endian bytes.
+///
+/// Applies `10^(value / 10)` and truncates to `u32`. 
 pub fn encode_threshold_value_to_le_bytes(value: f32) -> [u8;4] {
     if value == 0.0 {
         return [0x00,0x00,0x00,0x00];

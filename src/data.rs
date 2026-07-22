@@ -1,4 +1,9 @@
-
+//! Protocol constants: parameter/command identifiers and frame delimiters.
+ 
+/// Identifiers of the sensor's configurable parameters.
+///
+/// Covers detection `Range`, `Delay`, and the trigger/hold thresholds for each
+/// of the 16 distance gates. Each variant's value is the 16-bit word placed on
 #[repr(u16)]
 pub enum ParameterID{
     Range = 0x0100,

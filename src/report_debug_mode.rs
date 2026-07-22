@@ -1,4 +1,4 @@
-
+//! Debug reporting mode: the range-Doppler map (RDMAP) frame and its command.
 use super::{Parser,ParserResult, CommandID};
 
 const CMD_HEADER: [u8; 4] = [0xAA, 0xBF, 0x10, 0x14];
@@ -13,18 +13,23 @@ const RESERVED_LEN: usize = 0;
 
 type ParserType<'a> = Parser<'a, PAYLOAD_LEN, RESERVED_LEN, EXPECTED_CMD_ID>;
 
-///Represents an 2D array of 20Doppler x 16RangeGates values
+/// A range-Doppler map frame (debug mode): a 20 (Doppler) × 16 (range gate)
+/// matrix where each cell is the squared amplitude as a `u32`.
 pub struct HmmdRdmapFrame {
     pub rdmap:[[u32; 16]; 20]
 }
 
 
 impl <'a>ParserResult<'a, PAYLOAD_LEN,  RESERVED_LEN, EXPECTED_CMD_ID, HmmdRdmapFrame> for HmmdRdmapFrame {
+
+    /// Builds a parser configured for the 1280-byte RDMAP frame.
     fn new_parser() -> ParserType<'a> {
         ParserType::new(&CMD_HEADER, &CMD_TAIL)
     }
 
-
+    /// Decodes the 1280-byte payload (320 little-endian `u32` values) into the
+    /// 20×16 range-Doppler matrix. Returns a zero-filled frame if the payload
+    /// length is unexpected.
     fn decode(payload:&[u8]) -> Self{
 
         if payload.len() != PAYLOAD_LEN {
@@ -63,7 +68,7 @@ impl <'a>ParserResult<'a, PAYLOAD_LEN,  RESERVED_LEN, EXPECTED_CMD_ID, HmmdRdmap
 
 use super::{SerialCmd, SEND_HEADER,SEND_TAIL};
 
-/// Command for activating debug mode
+/// Frame builder for switching the sensor into debug mode.
 //send FD FC FB FA 08 00 12 00 00 00 00 00 00 00 04 03 02 01
 //result: 1280
 /*
