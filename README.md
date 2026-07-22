@@ -1,9 +1,5 @@
 # hmmd_mmwave_sensor
 
-[![Crates.io](https://img.shields.io/crates/v/hmmd_mmwave_sensor.svg)](https://crates.io/crates/hmmd_mmwave_sensor)
-[![Docs.rs](https://docs.rs/hmmd_mmwave_sensor/badge.svg)](https://docs.rs/hmmd_mmwave_sensor)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE)
-
 A `no_std` Rust driver for the **HMMD mmWave presence sensor**, implementing its
 USART serial protocol. HAL-agnostic: you provide the UART read/write and a delay
 function, so it runs on any MCU.
@@ -41,7 +37,7 @@ The module exposes a 5-pin header (`J2`):
 | RX   | Sensor UART receive            |
 | OT2  | GPIO output (presence/target)  |
 
-Default UART: **256000 baud, 8N1**. See the
+Default UART: **115200 baud, 8N1**. See the
 [Waveshare wiki](https://www.waveshare.com/wiki/HMMD_mmWave_Sensor) for full
 electrical and protocol details.
 
