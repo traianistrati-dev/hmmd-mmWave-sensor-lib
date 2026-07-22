@@ -85,17 +85,3 @@ if parser.feed(byte) {
     }
 }
 ```
-
-## `no_std` and testing
-
-This crate is `#![no_std]` and targets bare-metal MCUs. The `[lib]` section
-disables the test/bench/doctest harness because the bare-metal target has no
-`test` crate. To run tests, target your host triple:
-
-```sh
-cargo test -p hmmd_mmwave_sensor --target <host-triple>
-```
-
-## License
-
-Licensed under the [MIT License](./LICENSE).
