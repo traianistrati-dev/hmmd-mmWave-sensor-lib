@@ -39,22 +39,24 @@ impl <'a>ParserResult<'a, PAYLOAD_LEN, RESERVED_LEN,EXPECTED_CMD_ID, HAS_DATA_LE
 /// # Example
 ///
 /// ```ignore
-///let delay_micro_seconds_fn = |ms:u32|{
-///    cortex_m::asm::delay(ms.saturating_mul(&clocks.sysclk().to_Hz() / 1_000_000));
-///};
+/// let delay_micro_seconds_fn = |ms: u32| {
+///     cortex_m::asm::delay(ms.saturating_mul(&clocks.sysclk().to_Hz() / 1_000_000));
+/// };
 ///
-///let usart1_tx_write_fn = |data: &[u8]| {
-///    for &b in data {
-///          nb::block!(_tx1_mw_radar.write(b)).ok();
-///    }
-///    _tx1_mw_radar.flush().unwrap_or_default();
-///};
+/// let usart1_tx_write_fn = |data: &[u8]| {
+///     for &b in data {
+///         nb::block!(usart1_tx.write(b)).ok();
+///     }
+///     usart1_tx.flush().unwrap_or_default();
+/// };
 ///
-///let usart1_rx_read_fn = || -> Option<u8>{
-///     _rx1_mw_radar.read().ok()
-///};
+/// let usart1_rx_read_fn = || -> Option<u8> {
+///     usart1_rx.read().ok()
+/// };
 ///
-/// let mut radar = hmmd_mmwave_sensor::MicrowaveRadar::new(delay_micro_seconds_fn, usart1_tx_write_fn, usart1_rx_read_fn);
+/// let mut radar = hmmd_mmwave_sensor::MicrowaveRadar::new(
+///     delay_micro_seconds_fn, usart1_tx_write_fn, usart1_rx_read_fn,
+/// );
 ///
 /// let mut parser_params = hmmd_mmwave_sensor::parameter::ReadParam::new_parser();
 ///
@@ -104,6 +106,11 @@ impl SerialCmd<18,4>{
     /// [`RangeGate`](ParameterID::RangeGate) and [`AbsenseReportDelay`](ParameterID::AbsenseReportDelay) are
     /// written as a raw integer; trigger/hold thresholds are encoded from dB via
     /// [`encode_threshold_value_to_le_bytes`](crate::encode_threshold_value_to_le_bytes).
+    ///
+    /// Each value is range-checked and falls back to
+    /// [`default_value`](ParameterID::default_value) when out of range:
+    /// `RangeGate` must be `< 16`, `AbsenseReportDelay` in `1..=99_999_999`, and
+    /// thresholds in `1.0..=90.0` dB.
     pub fn set_param_value(param_id:ParameterID, param_value:f32) -> Self{
 
         let param_value_4b =  match &param_id {

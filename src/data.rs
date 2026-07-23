@@ -2,18 +2,19 @@
 
 /// Identifiers of the sensor's configurable parameters.
 ///
-/// Covers detection `RangeGate`, `AbsenseReportDelay is seconds`
-/// and the trigger/hold thresholds for each of the 16 distance gates.
-/// Each variant's value is the 16-bit word
-/// Rage calculates as: 
-/// RangeGate=0 -> 0-70cm(~35cm delcared)
-/// RangeGate=1 -> 0-1400cm(~70cm delcared)
-/// RangeGate * 70cm 
-/// for RangeGate 0 TriggerThreshold00, HoldThreshold00 sets detection sensivity limits       
-/// for RangeGate 1 TriggerThreshold00, HoldThreshold00 and TriggerThreshold01, HoldThreshold01        
+/// Each variant's value is the 16-bit word placed on the wire (big-endian via
+/// [`get_bytes`](ParameterID::get_bytes)).
+///
+/// Range is expressed in *gates*: each gate spans ~70 cm, so `RangeGate = N`
+/// configures a maximum detection distance of roughly `N * 70 cm`
+/// (e.g. `RangeGate = 0` ≈ 0–70 cm, `RangeGate = 1` ≈ 0–140 cm). For a given
+/// `RangeGate = N`, the trigger/hold thresholds of gates `00..=N` set the
+/// per-gate detection sensitivity.
 #[repr(u16)]
 pub enum ParameterID{
+    /// Maximum detection range, in gates (~70 cm per gate).
     RangeGate = 0x0100,
+    /// Absence report delay, in seconds, before a target is reported as gone.
     AbsenseReportDelay = 0x0400,
 
     TriggerThreshold00 = 0x1000,
@@ -61,10 +62,14 @@ pub enum ParameterID{
 }
 
 impl ParameterID{
+    /// Serializes the identifier into its 2 big-endian bytes as sent in a command frame.
     pub fn get_bytes(self) -> [u8;2]{
         (self as u16).to_be_bytes()
     }
-
+    /// Returns the manufacturer default value for this parameter.
+    ///
+    /// `RangeGate` and `AbsenseReportDelay` are returned as raw values; the
+    /// trigger/hold thresholds are returned in dB.
     pub fn default_value(&self) -> f32{
         match self {
             ParameterID::RangeGate => 15.0,
@@ -106,6 +111,10 @@ impl ParameterID{
 
 }
 
+/// Command codes of the HMMD protocol, including the matching ACK codes.
+///
+/// [`None`](CommandID::None) is a sentinel used by [`Parser`](crate::Parser) to
+/// mean "this frame type carries no command-id field".
 #[repr(u16)]
 pub enum CommandID{
     EnableConfig = 0xFF00,
@@ -123,17 +132,21 @@ pub enum CommandID{
 }
 
 impl CommandID{
+    /// Serializes the command code into its 2 big-endian bytes.f
     pub fn get_bytes(self) -> [u8;2]{
         (self as u16).to_be_bytes()
     }
-
+    /// Returns the command code as a `u16`, usable in `const` context
+    /// (e.g. as a const generic argument of [`Parser`](crate::Parser)).
     pub const fn as_u16(self) -> u16 {
         self as u16
     }
 
 }
 
+/// 4-byte header prefixing every command frame sent to the sensor.
 pub const SEND_HEADER:[u8;4] = [0xFD ,0xFC,0xFB,0xFA];
+/// 4-byte tail terminating every command frame sent to the sensor.
 pub const SEND_TAIL:[u8;4] = [0x04 ,0x03,0x02,0x01];
 
 

@@ -197,7 +197,8 @@ impl <DELAY:DelayMs, TX:UsartTx,RX:UsartRx> MicrowaveRadar<DELAY,TX,RX>{
     /// Sends a command and checks whether the received ACK matches the expected
     /// payload.
     ///
-    /// Returns `true` on a match or result_payload_ack is empty, `false` on mismatch or timeout.
+    /// Returns `true` on a match — or immediately when the command defines no ACK
+    /// payload (`result_payload_ack` empty); returns `false` on mismatch or timeout.
     pub fn send_cmd_and_check_ack_result<const S:usize, const R:usize>(&mut self, data:SerialCmd<S,R>) -> bool{
         self.tx_write.write_bytes(&data.send);
 

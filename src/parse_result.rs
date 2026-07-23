@@ -13,9 +13,16 @@ enum State {
 
 /// Binds a frame type to the parser that produces it and to its decoded output.
 ///
-/// The const parameters describe the frame layout: `PAYLOAD_LEN` payload bytes,
-/// `RESERVED_LEN` reserved bytes,
-/// `EXPECTED_CMD_ID` the command id to match
+/// The const parameters describe the frame layout:
+/// - `PAYLOAD_LEN` — number of payload bytes.
+/// - `RESERVED_LEN` — number of reserved bytes before the payload.
+/// - `EXPECTED_CMD_ID` — the command id to match
+///   ([`CommandID::None`](crate::CommandID::None) means the frame has no
+///   command-id field).
+/// - `HAS_DATA_LENGHT` — whether the frame includes the 2-byte little-endian
+///   length field after the header (`false` for frames that go straight from
+///   header to payload, such as the RDMAP debug frame).
+///
 /// `RESULT` is the decoded type.
 pub trait ParserResult<'a,
 const PAYLOAD_LEN: usize,
@@ -30,9 +37,10 @@ RESULT,
 
 /// Incremental parser for HMMD frames, driven one byte at a time.
 ///
-/// Feed received bytes with `(Parser::feed(byte)`; it returns `true` once a
-/// complete, valid frame has been assembled, at which point `Parser::payload`
-/// holds the useful bytes.
+/// Feed received bytes with [`feed`](Parser::feed); it returns `true` once a
+/// complete, valid frame has been assembled, at which point
+/// [`payload`](Parser::payload) holds the useful bytes. Header/length/command-id/
+/// tail are validated along the way and any mismatch resets the machine.
 pub struct Parser<'a,
 const PAYLOAD_LEN: usize,
 const RESERVED_LEN: usize,
@@ -104,8 +112,10 @@ const HAS_DATA_LENGHT: bool
     /// Consumes one received byte, advancing the state machine.
     ///
     /// Returns `true` exactly when a complete, valid frame has just been
-    /// finalized (the `Parser::payload` is then available);
-    /// otherwise returns `false`.
+    /// finalized (the [`payload`](Parser::payload) is then available);
+    /// otherwise returns `false`. When `HAS_DATA_LENGHT` is `false`, the parser
+    /// skips the length field and goes straight from the header to the next
+    /// stage.
     pub fn feed(&mut self, b: u8) -> bool {
         match self.state {
             State::Header(n) => {
