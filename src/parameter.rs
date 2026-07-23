@@ -89,6 +89,11 @@ impl SerialCmd<14,0>{
 impl SerialCmd<18,4>{
 
 
+    /// Builds the "write parameter" command that sets `param_id` to `param_value`.
+    ///
+    /// [`Range`](ParameterID::Range) and [`Delay`](ParameterID::Delay) are
+    /// written as a raw integer; trigger/hold thresholds are encoded from dB via
+    /// [`encode_threshold_value_to_le_bytes`](crate::encode_threshold_value_to_le_bytes).
     pub fn set_param_value(param_id:ParameterID, param_value:f32) -> Self{
 
         let cmd_id_2b = CommandID::WriteParam.get_bytes();
@@ -96,9 +101,32 @@ impl SerialCmd<18,4>{
 
         let param_value_4b =  match &param_id {
 
-            ParameterID::Range => (param_value as u32).to_le_bytes(),
-            ParameterID::Delay => (param_value as u32).to_le_bytes(),
-            _ => super::encode_threshold_value_to_le_bytes(param_value),
+            ParameterID::Range => {
+
+                let value:u32 = param_value as u32;
+                if 0 <= value && value < 16 {
+                    value.to_le_bytes()
+                }else {
+                    15u32.to_le_bytes()
+                }
+            },
+            ParameterID::Delay => {
+
+                let value:u32 = param_value as u32;
+                if 0 < value && value <= 99_999_999 {
+                    value.to_le_bytes()
+                }else {
+                    10u32.to_le_bytes()
+                }
+            },
+            _ => {
+                if (1.0..=90.0).contains(&param_value){
+                    super::encode_threshold_value_to_le_bytes(param_value)
+                }else{
+					super::encode_threshold_value_to_le_bytes(param_value)
+                }
+            }
+
         };
 
         let param_id_2b = param_id.get_bytes();
@@ -113,11 +141,11 @@ impl SerialCmd<18,4>{
                 SEND_TAIL[0], SEND_TAIL[1], SEND_TAIL[2], SEND_TAIL[3],
             ],
             result_payload_ack:[
-              //  SEND_HEADER[0], SEND_HEADER[1], SEND_HEADER[2], SEND_HEADER[3],
+                //  SEND_HEADER[0], SEND_HEADER[1], SEND_HEADER[2], SEND_HEADER[3],
                 //0x04, 0x00,//data lenght
                 cmd_id_ack_2b[0], cmd_id_ack_2b[1],
                 0x00, 0x00,
-               // SEND_TAIL[0], SEND_TAIL[1], SEND_TAIL[2], SEND_TAIL[3],
+                // SEND_TAIL[0], SEND_TAIL[1], SEND_TAIL[2], SEND_TAIL[3],
             ],
             wait_micro_seconds: 500,
 

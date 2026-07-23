@@ -1,5 +1,5 @@
 //! Protocol constants: parameter/command identifiers and frame delimiters.
- 
+
 /// Identifiers of the sensor's configurable parameters.
 ///
 /// Covers detection `Range`, `Delay`, and the trigger/hold thresholds for each
@@ -56,6 +56,45 @@ pub enum ParameterID{
 impl ParameterID{
     pub fn get_bytes(self) -> [u8;2]{
         (self as u16).to_be_bytes()
+    }
+
+    pub fn default_value(self) -> f32{
+        match self {
+            ParameterID::Range => 15.0,
+            ParameterID::Delay => 10.0,
+            ParameterID::TriggerThreshold00 => 48.93,
+            ParameterID::TriggerThreshold01 => 45.57,
+            ParameterID::TriggerThreshold02 => 43.20,
+            ParameterID::TriggerThreshold03 => 36.18,
+            ParameterID::TriggerThreshold04 => 34.45,
+            ParameterID::TriggerThreshold05 => 32.04,
+            ParameterID::TriggerThreshold06 => 30.22,
+            ParameterID::TriggerThreshold07 => 27.90,
+            ParameterID::TriggerThreshold08 => 25.86,
+            ParameterID::TriggerThreshold09 => 23.45,
+            ParameterID::TriggerThreshold10 => 21.90,
+            ParameterID::TriggerThreshold11 => 21.37,
+            ParameterID::TriggerThreshold12 => 19.98,
+            ParameterID::TriggerThreshold13 => 20.05,
+            ParameterID::TriggerThreshold14 => 18.98,
+            ParameterID::TriggerThreshold15 => 18.75,
+            ParameterID::HoldThreshold00 => 47.38,
+            ParameterID::HoldThreshold01 => 44.03,
+            ParameterID::HoldThreshold02 => 41.66,
+            ParameterID::HoldThreshold03 => 34.63,
+            ParameterID::HoldThreshold04 => 32.90,
+            ParameterID::HoldThreshold05 => 30.49,
+            ParameterID::HoldThreshold06 => 28.67,
+            ParameterID::HoldThreshold07 => 26.35,
+            ParameterID::HoldThreshold08 => 24.31,
+            ParameterID::HoldThreshold09 => 21.90,
+            ParameterID::HoldThreshold10 => 20.35,
+            ParameterID::HoldThreshold11 => 19.82,
+            ParameterID::HoldThreshold12 => 18.44,
+            ParameterID::HoldThreshold13 => 18.50,
+            ParameterID::HoldThreshold14 => 17.43,
+            ParameterID::HoldThreshold15 => 17.20,
+        }
     }
 
 }
