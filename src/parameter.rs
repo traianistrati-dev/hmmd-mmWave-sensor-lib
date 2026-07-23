@@ -8,8 +8,9 @@ const CMD_TAIL:   [u8; 4] = SEND_TAIL;
 const PAYLOAD_LEN: usize = 4;
 const EXPECTED_CMD_ID: u16  = super::CommandID::ReadParamAck.as_u16();
 const RESERVED_LEN: usize = 2;
+const HAS_DATA_LENGHT: bool = true;
 
-type ParserType<'a> = Parser<'a, PAYLOAD_LEN, RESERVED_LEN,EXPECTED_CMD_ID>;
+type ParserType<'a> = Parser<'a, PAYLOAD_LEN, RESERVED_LEN,EXPECTED_CMD_ID, HAS_DATA_LENGHT>;
 
 
 /// Marker type for parsing a "read parameter" reply.
@@ -18,7 +19,7 @@ type ParserType<'a> = Parser<'a, PAYLOAD_LEN, RESERVED_LEN,EXPECTED_CMD_ID>;
 pub struct ReadParam;
 
 
-impl <'a>ParserResult<'a, PAYLOAD_LEN, RESERVED_LEN,EXPECTED_CMD_ID, u32> for ReadParam {
+impl <'a>ParserResult<'a, PAYLOAD_LEN, RESERVED_LEN,EXPECTED_CMD_ID, HAS_DATA_LENGHT, u32> for ReadParam {
     fn new_parser() -> ParserType<'a> {
         ParserType::new(&CMD_HEADER, &CMD_TAIL)
     }
@@ -43,15 +44,15 @@ impl <'a>ParserResult<'a, PAYLOAD_LEN, RESERVED_LEN,EXPECTED_CMD_ID, u32> for Re
 /// };
 ///
 /// let mut radar = hmmd_mmwave_sensor::MicrowaveRadar::new(
-///     _tx1_mw_radar, _rx1_mw_radar, delay_micro_seconds_fn,
+///     delay_micro_seconds_fn, _tx1_mw_radar, _rx1_mw_radar,
 /// );
 ///
 /// let mut parser_params = hmmd_mmwave_sensor::parameter::ReadParam::new_parser();
 ///
 /// let range: Option<u32> = radar.get_param_value(
-///     hmmd_mmwave_sensor::data::ParameterID::Range, &mut parser_params);
+///     hmmd_mmwave_sensor::data::ParameterID::RangeGate, &mut parser_params);
 /// let delay: Option<u32> = radar.get_param_value(
-///     hmmd_mmwave_sensor::data::ParameterID::Delay, &mut parser_params);
+///     hmmd_mmwave_sensor::data::ParameterID::AbsenseReportDelay, &mut parser_params);
 /// let tt_00: Option<u32> = radar.get_param_value(
 ///     hmmd_mmwave_sensor::data::ParameterID::TriggerThreshold00, &mut parser_params);
 /// let ht_00: Option<u32> = radar.get_param_value(
@@ -75,7 +76,7 @@ impl SerialCmd<14,0>{
                 param_id_2b[0],param_id_2b[1],
                 SEND_TAIL[0], SEND_TAIL[1], SEND_TAIL[2], SEND_TAIL[3],
             ],
-            wait_micro_seconds: 50,
+            delay_micro_seconds: 50,
             result_payload_ack:[]
         }
 
@@ -91,43 +92,43 @@ impl SerialCmd<18,4>{
 
     /// Builds the "write parameter" command that sets `param_id` to `param_value`.
     ///
-    /// [`Range`](ParameterID::Range) and [`Delay`](ParameterID::Delay) are
+    /// [`RangeGate`](ParameterID::RangeGate) and [`AbsenseReportDelay`](ParameterID::AbsenseReportDelay) are
     /// written as a raw integer; trigger/hold thresholds are encoded from dB via
     /// [`encode_threshold_value_to_le_bytes`](crate::encode_threshold_value_to_le_bytes).
     pub fn set_param_value(param_id:ParameterID, param_value:f32) -> Self{
 
-        let cmd_id_2b = CommandID::WriteParam.get_bytes();
-        let cmd_id_ack_2b = CommandID::WriteParamAck.get_bytes();
-
         let param_value_4b =  match &param_id {
 
-            ParameterID::Range => {
+            ParameterID::RangeGate => {
 
                 let value:u32 = param_value as u32;
-                if 0 <= value && value < 16 {
+                if value < 16 {
                     value.to_le_bytes()
                 }else {
-                    15u32.to_le_bytes()
+                    (ParameterID::RangeGate.default_value() as u32).to_le_bytes()
                 }
             },
-            ParameterID::Delay => {
+            ParameterID::AbsenseReportDelay => {
 
                 let value:u32 = param_value as u32;
                 if 0 < value && value <= 99_999_999 {
                     value.to_le_bytes()
                 }else {
-                    10u32.to_le_bytes()
+                    (ParameterID::AbsenseReportDelay.default_value() as u32).to_le_bytes()
                 }
             },
-            _ => {
+            param => {
                 if (1.0..=90.0).contains(&param_value){
                     super::encode_threshold_value_to_le_bytes(param_value)
                 }else{
-					super::encode_threshold_value_to_le_bytes(param_value)
+                    super::encode_threshold_value_to_le_bytes(param.default_value())
                 }
             }
 
         };
+
+        let cmd_id_2b = CommandID::WriteParam.get_bytes();
+        let cmd_id_ack_2b = CommandID::WriteParamAck.get_bytes();
 
         let param_id_2b = param_id.get_bytes();
 
@@ -147,7 +148,7 @@ impl SerialCmd<18,4>{
                 0x00, 0x00,
                 // SEND_TAIL[0], SEND_TAIL[1], SEND_TAIL[2], SEND_TAIL[3],
             ],
-            wait_micro_seconds: 500,
+            delay_micro_seconds: 500,
 
         }
     }

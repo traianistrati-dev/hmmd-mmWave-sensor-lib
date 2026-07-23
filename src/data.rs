@@ -2,12 +2,19 @@
 
 /// Identifiers of the sensor's configurable parameters.
 ///
-/// Covers detection `Range`, `Delay`, and the trigger/hold thresholds for each
-/// of the 16 distance gates. Each variant's value is the 16-bit word placed on
+/// Covers detection `RangeGate`, `AbsenseReportDelay is seconds`
+/// and the trigger/hold thresholds for each of the 16 distance gates.
+/// Each variant's value is the 16-bit word
+/// Rage calculates as: 
+/// RangeGate=0 -> 0-70cm(~35cm delcared)
+/// RangeGate=1 -> 0-1400cm(~70cm delcared)
+/// RangeGate * 70cm 
+/// for RangeGate 0 TriggerThreshold00, HoldThreshold00 sets detection sensivity limits       
+/// for RangeGate 1 TriggerThreshold00, HoldThreshold00 and TriggerThreshold01, HoldThreshold01        
 #[repr(u16)]
 pub enum ParameterID{
-    Range = 0x0100,
-    Delay = 0x0400,
+    RangeGate = 0x0100,
+    AbsenseReportDelay = 0x0400,
 
     TriggerThreshold00 = 0x1000,
     TriggerThreshold01 = 0x1100,
@@ -58,10 +65,10 @@ impl ParameterID{
         (self as u16).to_be_bytes()
     }
 
-    pub fn default_value(self) -> f32{
+    pub fn default_value(&self) -> f32{
         match self {
-            ParameterID::Range => 15.0,
-            ParameterID::Delay => 10.0,
+            ParameterID::RangeGate => 15.0,
+            ParameterID::AbsenseReportDelay => 10.0,
             ParameterID::TriggerThreshold00 => 48.93,
             ParameterID::TriggerThreshold01 => 45.57,
             ParameterID::TriggerThreshold02 => 43.20,
@@ -111,7 +118,7 @@ pub enum CommandID{
     ReadParamAck = 0x0801,
     ReadFirmwareVersion = 0x0000,
     ReadSerialNumber = 0x1100,
-    ReportMode = 0x1200,//64 00 00 00 = Normal Mode  (ASCII ON/OFF); 04 00 00 00 = Report Mode; 00 00 00 00 = Debug Mode
+    ReportMode = 0x1200,//64 00 00 00 = Basic (ASCII ON RangeGate 1234 or OFF); 04 00 00 00 = RangeGate with energy; 00 00 00 00 = 20Dopple * 16EnergyGates
     None = 0xFFFF,
 }
 

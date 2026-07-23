@@ -64,8 +64,8 @@ radar.set_range_delay_with_default_threshold(/* max_range */ 6.0, /* delay_sec *
 
 // Read individual parameters.
 let mut parser = ReadParam::new_parser();
-let range: Option<u32> = radar.get_param_value(ParameterID::Range, &mut parser);
-let delay: Option<u32> = radar.get_param_value(ParameterID::Delay, &mut parser);
+let range: Option<u32> = radar.get_param_value(ParameterID::RangeGate, &mut parser);
+let delay: Option<u32> = radar.get_param_value(ParameterID::AbsenseReportDelay, &mut parser);
 ```
 
 ### Parsing report frames

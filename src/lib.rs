@@ -29,7 +29,7 @@
 //!
 //! let mut parser = hmmd_mmwave_sensor::parameter::ReadParam::new_parser();
 //! let range = radar.get_param_value(
-//!     hmmd_mmwave_sensor::data::ParameterID::Range,
+//!     hmmd_mmwave_sensor::data::ParameterID::RangeGate,
 //!     &mut parser,
 //! );
 //! ```

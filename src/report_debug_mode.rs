@@ -10,8 +10,9 @@ const COMMAND_ID: CommandID  = CommandID::ReportMode;
 
 const EXPECTED_CMD_ID: u16  = COMMAND_ID.as_u16();
 const RESERVED_LEN: usize = 0;
+const HAS_DATA_LENGHT: bool = false;
 
-type ParserType<'a> = Parser<'a, PAYLOAD_LEN, RESERVED_LEN, EXPECTED_CMD_ID>;
+type ParserType<'a> = Parser<'a, PAYLOAD_LEN, RESERVED_LEN, EXPECTED_CMD_ID, HAS_DATA_LENGHT>;
 
 /// A range-Doppler map frame (debug mode): a 20 (Doppler) × 16 (range gate)
 /// matrix where each cell is the squared amplitude as a `u32`.
@@ -20,7 +21,7 @@ pub struct HmmdRdmapFrame {
 }
 
 
-impl <'a>ParserResult<'a, PAYLOAD_LEN,  RESERVED_LEN, EXPECTED_CMD_ID, HmmdRdmapFrame> for HmmdRdmapFrame {
+impl <'a>ParserResult<'a, PAYLOAD_LEN,  RESERVED_LEN, EXPECTED_CMD_ID, HAS_DATA_LENGHT, HmmdRdmapFrame> for HmmdRdmapFrame {
 
     /// Builds a parser configured for the 1280-byte RDMAP frame.
     fn new_parser() -> ParserType<'a> {
@@ -42,11 +43,11 @@ impl <'a>ParserResult<'a, PAYLOAD_LEN,  RESERVED_LEN, EXPECTED_CMD_ID, HmmdRdmap
 
         let mut index = 0;
 
-        for doppler in 0..20 {
+        for doppler in &mut rdmap {
 
-            for gate in 0..16 {
+            for gate in doppler.iter_mut().take(16) {
 
-                rdmap[doppler][gate] = u32::from_le_bytes([
+                *gate = u32::from_le_bytes([
                         payload[index],
                         payload[index + 1],
                         payload[index + 2],
@@ -118,7 +119,7 @@ impl SerialCmd<18,0>{
                 SEND_TAIL[0], SEND_TAIL[1], SEND_TAIL[2], SEND_TAIL[3],
             ],
             result_payload_ack:[],
-            wait_micro_seconds: 50,
+            delay_micro_seconds: 50,
         }
     }
 

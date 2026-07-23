@@ -10,8 +10,9 @@ const PAYLOAD_LEN: usize = 35;
 
 const EXPECTED_CMD_ID: u16  = super::CommandID::None.as_u16();
 const RESERVED_LEN: usize = 0;
+const HAS_DATA_LENGHT: bool = true;
 
-type ParserType<'a> = Parser<'a, PAYLOAD_LEN,  RESERVED_LEN, EXPECTED_CMD_ID>;
+type ParserType<'a> = Parser<'a, PAYLOAD_LEN,  RESERVED_LEN, EXPECTED_CMD_ID, HAS_DATA_LENGHT>;
 
 /// A normal-mode report frame: target presence, distance, and per-gate energies.
 pub struct HmmdFrame {
@@ -22,7 +23,7 @@ pub struct HmmdFrame {
 
 
 
-impl <'a>ParserResult<'a, PAYLOAD_LEN,  RESERVED_LEN, EXPECTED_CMD_ID, HmmdFrame> for HmmdFrame {
+impl <'a>ParserResult<'a, PAYLOAD_LEN,  RESERVED_LEN, EXPECTED_CMD_ID, HAS_DATA_LENGHT, HmmdFrame> for HmmdFrame {
 
     /// Builds a parser configured for the 35-byte normal-mode frame.
     fn new_parser() -> ParserType<'a> {
@@ -82,7 +83,7 @@ impl SerialCmd<18,0>{
                 SEND_TAIL[0], SEND_TAIL[1], SEND_TAIL[2], SEND_TAIL[3],
             ],
             result_payload_ack:[],
-            wait_micro_seconds: 50,
+            delay_micro_seconds: 50,
         }
     }
 

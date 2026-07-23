@@ -46,7 +46,7 @@ impl<F> UsartRx for F where F: FnMut() -> Option<u8>,
 /// Blocking delay used to pace command/response exchanges.
 ///
 /// Blanket-implemented for any `Fn(u32)`. The unit of the argument is defined by
-/// the implementation (the crate passes the value of `SerialCmd::wait_micro_seconds`)
+/// the implementation (the crate passes the value of `SerialCmd::delay_micro_seconds`)
 pub trait DelayMs {
     fn delay_micro_seconds(&self, ms: u32);
 }
@@ -78,9 +78,9 @@ impl <DELAY:DelayMs, TX:UsartTx,RX:UsartRx> MicrowaveRadar<DELAY,TX,RX>{
 
         if self.begin_config() && self.begin_config()
 
-        && self.send_cmd_and_check_ack_result(SerialCmd::set_param_value(ParameterID::Range, max_range as f32))
+        && self.send_cmd_and_check_ack_result(SerialCmd::set_param_value(ParameterID::RangeGate, max_range as f32))
 
-        && self.send_cmd_and_check_ack_result(SerialCmd::set_param_value(ParameterID::Delay, delay_sec as f32))
+        && self.send_cmd_and_check_ack_result(SerialCmd::set_param_value(ParameterID::AbsenseReportDelay, delay_sec as f32))
 
         && self.send_cmd_and_check_ack_result(SerialCmd::set_param_value(ParameterID::TriggerThreshold00, ParameterID::TriggerThreshold00.default_value()))
         && self.send_cmd_and_check_ack_result(SerialCmd::set_param_value(ParameterID::HoldThreshold00, ParameterID::HoldThreshold01.default_value()))
@@ -115,9 +115,9 @@ impl <DELAY:DelayMs, TX:UsartTx,RX:UsartRx> MicrowaveRadar<DELAY,TX,RX>{
         && self.send_cmd_and_check_ack_result(SerialCmd::set_param_value(ParameterID::TriggerThreshold15, ParameterID::TriggerThreshold15.default_value()))
         && self.send_cmd_and_check_ack_result(SerialCmd::set_param_value(ParameterID::HoldThreshold15, ParameterID::HoldThreshold15.default_value()))
 
-        && self.end_save_config(){ 
-		// Do something after saving the configuration
-		}
+        && self.end_save_config(){
+            // Do something after saving the configuration
+        }
 
         self.send_cmd_and_check_ack_result(SerialCmd::set_report_mode());
 
@@ -140,10 +140,10 @@ impl <DELAY:DelayMs, TX:UsartTx,RX:UsartRx> MicrowaveRadar<DELAY,TX,RX>{
     ///
     /// `parser` must be created with (crate::parameter::ReadParam::new_parser).
     /// Returns `None` on timeout or an invalid reply.
-    pub fn get_param_value<const PAYLOAD_LEN: usize, const RESERVED_LEN: usize, const EXPECTED_CMD_ID: u16>(
+    pub fn get_param_value<const PAYLOAD_LEN: usize, const RESERVED_LEN: usize, const EXPECTED_CMD_ID: u16,const HAS_DATA_LENGHT: bool>(
         &mut self
         ,param_id:ParameterID
-        ,parser:&mut super::Parser<PAYLOAD_LEN,RESERVED_LEN,EXPECTED_CMD_ID>
+        ,parser:&mut super::Parser<PAYLOAD_LEN,RESERVED_LEN,EXPECTED_CMD_ID, HAS_DATA_LENGHT>
     ) -> Option<u32>{
 
 
@@ -159,16 +159,16 @@ impl <DELAY:DelayMs, TX:UsartTx,RX:UsartRx> MicrowaveRadar<DELAY,TX,RX>{
     ///
     /// Returns the decoded result, or `None` if no valid frame arrives before the
     /// internal idle timeout.
-    pub fn send_cmd_and_get_result<const S:usize,const PAYLOAD_LEN: usize, const RESERVED_LEN: usize, const EXPECTED_CMD_ID: u16, RESULT>(
+    pub fn send_cmd_and_get_result<const S:usize,const PAYLOAD_LEN: usize, const RESERVED_LEN: usize, const EXPECTED_CMD_ID: u16,const HAS_DATA_LENGHT: bool, RESULT>(
         &mut self,
         data:SerialCmd<S,0>,
-        parser: &mut super::Parser<PAYLOAD_LEN,RESERVED_LEN,EXPECTED_CMD_ID>,
+        parser: &mut super::Parser<PAYLOAD_LEN,RESERVED_LEN,EXPECTED_CMD_ID, HAS_DATA_LENGHT>,
         decoder: fn(&[u8]) -> RESULT,
     ) -> Option<RESULT>
     {
         self.tx_write.write_bytes(&data.send);
 
-        self.delay_micro_seconds(data.wait_micro_seconds);
+        self.delay_micro_seconds(data.delay_micro_seconds);
 
         parser.clear();
 
@@ -188,7 +188,7 @@ impl <DELAY:DelayMs, TX:UsartTx,RX:UsartRx> MicrowaveRadar<DELAY,TX,RX>{
                 }
             }
 
-    	}
+        }
 
         None
 
@@ -197,42 +197,42 @@ impl <DELAY:DelayMs, TX:UsartTx,RX:UsartRx> MicrowaveRadar<DELAY,TX,RX>{
     /// Sends a command and checks whether the received ACK matches the expected
     /// payload.
     ///
-    /// Returns `true` on a match, `false` on mismatch or timeout.
-    pub fn send_cmd_and_check_ack_result<'a, const S:usize, const R:usize>(&mut self, data:SerialCmd<S,R>) -> bool{
+    /// Returns `true` on a match or result_payload_ack is empty, `false` on mismatch or timeout.
+    pub fn send_cmd_and_check_ack_result<const S:usize, const R:usize>(&mut self, data:SerialCmd<S,R>) -> bool{
         self.tx_write.write_bytes(&data.send);
 
-        self.delay_micro_seconds(data.wait_micro_seconds);
+        self.delay_micro_seconds(data.delay_micro_seconds);
 
 
-        if !data.result_payload_ack.is_empty() {
+        if data.result_payload_ack.is_empty() {
+            return true;
+        }
 
-            let mut parser = super::Parser::<'a, R, 0, { super::CommandID::None.as_u16() }>::new(&super::SEND_HEADER, &super::SEND_TAIL);
+        let mut parser = super::Parser::<R, 0, { super::CommandID::None.as_u16() }, true>::new(&super::SEND_HEADER, &super::SEND_TAIL);
 
-            parser.clear();
+        parser.clear();
 
-            let mut idle_loops = 0u32;
+        let mut idle_loops = 0u32;
 
-            loop {
+        loop {
 
-                if let Some(b) = self.rx_read.read_byte() {
-                    if parser.feed(b) {
+            if let Some(b) = self.rx_read.read_byte() {
+                if parser.feed(b) {
 
-                        for i in 0..R{
-                            if data.result_payload_ack[i] != parser.payload[i] {
-                                return false;
-                            }
+                    for i in 0..R{
+                        if data.result_payload_ack[i] != parser.payload[i] {
+                            return false;
                         }
-                        return true;
                     }
-                }else{
+                    return true;
+                }
+            }else{
 
-                    idle_loops += 1;
-                    if idle_loops > 50_000 {
-                        break;
-                    }
+                idle_loops += 1;
+                if idle_loops > 50_000 {
+                    break;
                 }
             }
-
         }
         false
 
