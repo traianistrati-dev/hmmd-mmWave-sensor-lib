@@ -39,13 +39,22 @@ impl <'a>ParserResult<'a, PAYLOAD_LEN, RESERVED_LEN,EXPECTED_CMD_ID, HAS_DATA_LE
 /// # Example
 ///
 /// ```ignore
-/// let delay_micro_seconds_fn = |ms: u32| {
-///     cortex_m::asm::delay(ms.saturating_mul(&clocks.sysclk().to_Hz() / 1_000_000));
-/// };
+///let delay_micro_seconds_fn = |ms:u32|{
+///    cortex_m::asm::delay(ms.saturating_mul(&clocks.sysclk().to_Hz() / 1_000_000));
+///};
 ///
-/// let mut radar = hmmd_mmwave_sensor::MicrowaveRadar::new(
-///     delay_micro_seconds_fn, _tx1_mw_radar, _rx1_mw_radar,
-/// );
+///let usart1_tx_write_fn = |data: &[u8]| {
+///    for &b in data {
+///          nb::block!(_tx1_mw_radar.write(b)).ok();
+///    }
+///    _tx1_mw_radar.flush().unwrap_or_default();
+///};
+///
+///let usart1_rx_read_fn = || -> Option<u8>{
+///     _rx1_mw_radar.read().ok()
+///};
+///
+/// let mut radar = hmmd_mmwave_sensor::MicrowaveRadar::new(delay_micro_seconds_fn, usart1_tx_write_fn, usart1_rx_read_fn);
 ///
 /// let mut parser_params = hmmd_mmwave_sensor::parameter::ReadParam::new_parser();
 ///
