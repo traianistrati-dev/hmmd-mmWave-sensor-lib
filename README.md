@@ -60,7 +60,7 @@ let rx = || -> Option<u8> { /* read one byte if available */ None };
 let mut radar = MicrowaveRadar::new(delay_us, tx, rx);
 
 // Configure range + delay and load the default per-gate thresholds.
-radar.set_range_delay_with_default_threshold(/* max_range */ 6.0, /* delay_sec */ 5.0);
+radar.set_range_delay_with_default_threshold(/* max_range */ 2, /* delay_sec */ 5);
 
 // Read individual parameters.
 let mut parser = ReadParam::new_parser();
